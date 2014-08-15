@@ -210,8 +210,7 @@ void do_showmap(int pid, const char *name) {
 }
 
 /* prints the contents of a file */
-int dump_file(const char *title, const char* path) {
-    char buffer[32768];
+int dump_file(const char *title, const char *path) {
     int fd = open(path, O_RDONLY);
     if (fd < 0) {
         int err = errno;
@@ -220,6 +219,11 @@ int dump_file(const char *title, const char* path) {
         if (title) printf("\n");
         return -1;
     }
+    return dump_file_from_fd(title, path, fd);
+}
+
+int dump_file_from_fd(const char *title, const char *path, int fd) {
+    char buffer[32768];
 
     if (title) printf("------ %s (%s", title, path);
 
@@ -243,8 +247,8 @@ int dump_file(const char *title, const char* path) {
         }
         if (ret <= 0) break;
     }
-
     close(fd);
+
     if (!newline) printf("\n");
     if (title) printf("\n");
     return 0;
@@ -526,7 +530,7 @@ const char *dump_traces() {
         }
         data[len] = '\0';
 
-        if (!strcmp(data, "/system/bin/app_process")) {
+        if (!strncmp(data, "/system/bin/app_process", strlen("/system/bin/app_process"))) {
             /* skip zygote -- it won't dump its stack anyway */
             snprintf(path, sizeof(path), "/proc/%d/cmdline", pid);
             int fd = open(path, O_RDONLY);
@@ -536,7 +540,7 @@ const char *dump_traces() {
                 continue;
             }
             data[len] = '\0';
-            if (!strcmp(data, "zygote")) {
+            if (!strncmp(data, "zygote", strlen("zygote"))) {
                 continue;
             }
 
@@ -592,4 +596,23 @@ error_close_fd:
 
 void play_sound(const char* path) {
     run_command(NULL, 5, "/system/bin/stagefright", "-o", "-a", path, NULL);
+}
+
+void dump_route_tables() {
+    const char* const RT_TABLES_PATH = "/data/misc/net/rt_tables";
+    dump_file("RT_TABLES", RT_TABLES_PATH);
+    FILE* fp = fopen(RT_TABLES_PATH, "r");
+    if (!fp) {
+        printf("*** %s: %s\n", RT_TABLES_PATH, strerror(errno));
+        return;
+    }
+    char table[16];
+    // Each line has an integer (the table number), a space, and a string (the table name). We only
+    // need the table number. It's a 32-bit unsigned number, so max 10 chars. Skip the table name.
+    // Add a fixed max limit so this doesn't go awry.
+    for (int i = 0; i < 64 && fscanf(fp, " %10s %*s", table) == 1; ++i) {
+        run_command("ROUTE TABLE IPv4", 10, "ip", "-4", "route", "show", "table", table, NULL);
+        run_command("ROUTE TABLE IPv6", 10, "ip", "-6", "route", "show", "table", table, NULL);
+    }
+    fclose(fp);
 }
