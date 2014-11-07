@@ -202,7 +202,12 @@ private:
     virtual status_t captureScreen(const sp<IBinder>& display,
             const sp<IGraphicBufferProducer>& producer,
             uint32_t reqWidth, uint32_t reqHeight,
-            uint32_t minLayerZ, uint32_t maxLayerZ);
+            uint32_t minLayerZ, uint32_t maxLayerZ, bool isCpuConsumer);
+#ifdef USE_MHEAP_SCREENSHOT
+    virtual status_t captureScreen(const sp<IBinder>& display, sp<IMemoryHeap>* heap,
+        uint32_t* width, uint32_t* height, uint32_t reqWidth,
+        uint32_t reqHeight, uint32_t minLayerZ, uint32_t maxLayerZ);
+#endif
     // called when screen needs to turn off
     virtual void blank(const sp<IBinder>& display);
     // called when screen is turning back on
@@ -312,7 +317,16 @@ private:
             const sp<const DisplayDevice>& hw,
             const sp<IGraphicBufferProducer>& producer,
             uint32_t reqWidth, uint32_t reqHeight,
+            uint32_t minLayerZ, uint32_t maxLayerZ,
+            bool useReadPixels);
+
+#ifdef USE_MHEAP_SCREENSHOT
+    status_t captureScreenImplCpuConsumerLocked(
+            const sp<const DisplayDevice>& hw,
+            sp<IMemoryHeap>* heap, uint32_t* width, uint32_t* height,
+            uint32_t reqWidth, uint32_t reqHeight,
             uint32_t minLayerZ, uint32_t maxLayerZ);
+#endif
 
     /* ------------------------------------------------------------------------
      * EGL

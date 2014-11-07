@@ -35,6 +35,16 @@ sources := \
     Static.cpp \
     TextOutput.cpp \
 
+ifeq ($(BOARD_NEEDS_MEMORYHEAPPMEM),true)
+sources += \
+    MemoryHeapPmem.cpp
+endif
+
+ifeq ($(BOARD_NEEDS_MEMORYHEAPION),true)
+sources += \
+    MemoryHeapIon.cpp
+endif
+
 LOCAL_PATH:= $(call my-dir)
 
 include $(CLEAR_VARS)
@@ -46,7 +56,7 @@ ifneq ($(TARGET_IS_64_BIT),true)
 LOCAL_CFLAGS += -DBINDER_IPC_32BIT=1
 endif
 endif
-LOCAL_CFLAGS += -Werror
+#LOCAL_CFLAGS += -Werror
 include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
@@ -58,5 +68,5 @@ ifneq ($(TARGET_IS_64_BIT),true)
 LOCAL_CFLAGS += -DBINDER_IPC_32BIT=1
 endif
 endif
-LOCAL_CFLAGS += -Werror
+#LOCAL_CFLAGS += -Werror
 include $(BUILD_STATIC_LIBRARY)
